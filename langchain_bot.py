@@ -11,6 +11,7 @@ import tempfile
 from dagster import asset
 from dagster import FreshnessPolicy, RetryPolicy
 import pickle
+# from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 
 def get_github_docs(repo_owner, repo_name):
@@ -38,7 +39,7 @@ def get_github_docs(repo_owner, repo_name):
 
 @asset
 def source_docs():
-    return list(get_github_docs("dagster-io", "dagster"))
+    return list(get_github_docs("yytypescript", "book"))
 
 
 @asset(
@@ -47,16 +48,18 @@ def source_docs():
 )
 def search_index(source_docs):
     source_chunks = []
-    splitter = CharacterTextSplitter(separator=" ", chunk_size=1024, chunk_overlap=0)
+    splitter = CharacterTextSplitter(chunk_size=1024, chunk_overlap=0, separator="\n")
     for source in source_docs:
         for chunk in splitter.split_text(source.page_content):
+            # print(chunk)
+            # print('-----')
             source_chunks.append(Document(page_content=chunk, metadata=source.metadata))
 
     with open("search_index.pickle", "wb") as f:
         pickle.dump(FAISS.from_documents(source_chunks, OpenAIEmbeddings()), f)
 
 
-chain = load_qa_with_sources_chain(OpenAI(temperature=0))
+chain = load_qa_with_sources_chain(OpenAI(temperature=0), chain_type="map_reduce")
 
 
 def print_answer(question):
@@ -68,6 +71,7 @@ def print_answer(question):
                 "input_documents": search_index.similarity_search(question, k=4),
                 "question": question,
             },
-            return_only_outputs=True,
+            return_only_outputs=False,
+
         )["output_text"]
     )
