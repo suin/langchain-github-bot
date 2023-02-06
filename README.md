@@ -16,3 +16,7 @@ SOURCES: https://github.com/yytypescript/book/blob/3662ce0e69026cba3c2fc12587a26
 
 $ dagit -f langchain_bot.py
 ```
+
+## 参考記事
+
+- https://dagster.io/blog/chatgpt-langchain
